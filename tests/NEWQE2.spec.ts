@@ -13,8 +13,11 @@ const city1 = "Manila";
 const postalcode1 = '1680';  
 
 test('test', async ({ page }) => {
+  
+  test.setTimeout(60000);
   //Navigate to site (1)
   await page.goto('https://demo.spreecommerce.org/');
+  await page.setViewportSize({ width: 1920, height: 1080 });
   await page.waitForTimeout(2000)
   //Register a new user(2)
   await page.getByRole('navigation', { name: 'Top' }).getByRole('button').nth(2).waitFor({ state: 'visible' });
@@ -171,6 +174,96 @@ await postalCodeInput.click();
 await postalCodeInput.fill(postalcode1);
 const enteredPostalCode = await postalCodeInput.inputValue();
 console.log('Entered postal code:', enteredPostalCode);
+
+// Click the "Save and Continue" button on the checkout address form
+await page.waitForSelector('button.checkout-content-save-continue-button', { state: 'visible' });
+const saveAndContinueBtn = page.locator('button.checkout-content-save-continue-button');
+await expect(saveAndContinueBtn).toBeVisible();
+await saveAndContinueBtn.click();
+//await page.waitForTimeout(5000);
+
+// await expect(page.locator('h5.checkout-content-header', { hasText: 'Delivery method' })).toBeVisible({ timeout: 2000 });
+// Select and click the "Premium" shipping option
+// Wait for the label with text "Premium" to be visible and then click it
+const premiumLabel = page.locator('label[for^="shipping-rate-"]', { hasText: 'Premium' });
+await premiumLabel.waitFor({ state: 'visible' });
+await expect(premiumLabel).toBeVisible();
+await expect(premiumLabel).toBeEnabled();
+await premiumLabel.click();
+
+// Verify the Standard shipping list item has style "pointer-events: none"
+// Click the Premium shipping rate radio button
+// const premiumShippingRadio = page.locator('input[type="radio"]#shipping-rate-2592');
+// await expect(premiumShippingRadio).toBeVisible();
+// await expect(premiumShippingRadio).toBeEnabled();
+// await premiumShippingRadio.check();
+
+// const standardListItem = page.locator('li.list-group-item[data-checkout-delivery-target="shippingRate"][style*="pointer-events: none"]', { hasText: 'Standard' });
+// await expect(standardListItem).toBeVisible();
+
+// // Click the "Save and Continue" button on the checkout shipping form
+await page.waitForSelector('button.checkout-content-save-continue-button', { state: 'visible' });
+await expect(saveAndContinueBtn).toBeVisible();
+const isDisabled = await saveAndContinueBtn.getAttribute('disabled');
+console.log('Save and Continue button disabled:', isDisabled !== null);
+await expect(saveAndContinueBtn).toBeEnabled();
+await saveAndContinueBtn.click();
+
+// // Select the card number input, wait for it to be visible, and input a value
+const cardNumber ='4242 4242 4242 4242';
+const expiryDate = '01/30';
+const cvc = '333'; 
+
+// const cardNumberInput = page.locator('#Field-numberInput');
+// await expect(cardNumberInput).toBeVisible();
+// await cardNumberInput.fill(cardNumber); // Example Visa test card number
+await page.waitForTimeout(3000);
+// Select the card number input, wait for it to be attached and visible, then input the value
+// Check if the "Add a new card" span is visible
+// Wait for the payment section or Stripe element to be visible first
+await page.waitForSelector('[data-checkout-stripe-target="paymentElement"]', { state: 'visible', timeout: 15000 });
+const stripePaymentLink = page.locator('a.custom-control.custom-radio', { hasText: 'Stripe' });
+await expect(stripePaymentLink).toBeVisible();
+await expect(stripePaymentLink).toBeEnabled
+// Now check for the "Add a new card" span
+// const addNewCardSpan = page.locator('span.cursor-pointer', { hasText: 'Add a new card' });
+// await expect(addNewCardSpan).toBeVisible({ timeout: 15000 });
+const cardNumberInput = page.locator('input[name="number"]');
+await expect(cardNumberInput).toBeEnabled();
+await expect(cardNumberInput).toBeVisible();
+
+
+// await page.waitForSelector('#Field-numberInput', { state: 'visible', timeout: 3000 });
+// const cardNumberInput = page.locator('#Field-numberInput');
+// await expect(cardNumberInput).toBeVisible({ timeout: 3000 });
+await cardNumberInput.fill(cardNumber);
+
+const expiryDateInput = page.locator('#Field-expiryInput');
+await expect(expiryDateInput).toBeVisible();
+await expiryDateInput.fill(expiryDate);
+
+const cvcInput = page.locator('#Field-cvcInput');
+await expect(cvcInput).toBeVisible();
+await cvcInput.fill(cvc);
+
+const payNowBtn = page.locator('#checkout-payment-submit');
+await expect(payNowBtn).toBeVisible();
+await payNowBtn.click();
+
+const orderNumber = await page.locator('strong').textContent();
+console.log('Order number:', orderNumber);
+expect(orderNumber).toMatch(/^R\d+$/);
+
+// Get the value from the <h5> element confirming the order
+const confirmationMessage = await page.locator('h5.mb-3.font-semibold.pb-3.border-b.font-body').textContent();
+console.log('Confirmation message:', confirmationMessage);
+expect(confirmationMessage?.trim()).toBe('Your order is confirmed!');
+
+// Get the value from the <span> element with class "badge-paid"
+const paymentStatus = await page.locator('span.badge-paid').textContent();
+console.log('Payment status:', paymentStatus);
+expect(paymentStatus?.trim()).toBe('Paid');
+
 
 
 });
